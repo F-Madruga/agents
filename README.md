@@ -33,3 +33,9 @@ Every question can also be answered up front with a flag — see:
 ```sh
 node cli/index.mjs --help
 ```
+
+## License
+
+MIT, except some skills that were copied from other people's repos and keep
+their original license. Each of those has a `SOURCE.md` in its folder saying
+where it came from and under which license. Use at your own risk.
