@@ -27,21 +27,22 @@ test('resolveTargets maps agent/scope to the right paths', () => {
   });
 });
 
-test('planInstall dedupes the shared project AGENTS.md for cursor+codex', () => {
+test('planInstall dedupes the shared project AGENTS.md and sources from the store', () => {
   const actions = planInstall({
     skills: [{ dirName: 'tdd', path: '/repo/skills/active/tdd' }],
     agentIds: ['cursor', 'codex'],
     scope: 'project',
     method: 'symlink',
     includeInstructions: true,
-    repoRoot: '/repo',
+    storeDir: '/home/u/.config/agents',
     projectRoot: '/proj',
     home: '/home/u',
   });
   const instructions = actions.filter((a) => a.kind === 'instructions');
   assert.equal(instructions.length, 1);
   assert.equal(instructions[0].target, '/proj/AGENTS.md');
-  assert.equal(instructions[0].source, '/repo/instructions/AGENTS.md');
+  assert.equal(instructions[0].source, '/home/u/.config/agents/AGENTS.md');
+  assert.equal(actions.filter((a) => a.kind === 'skill')[0].source, '/home/u/.config/agents/skills/tdd');
   const skills = actions.filter((a) => a.kind === 'skill');
   assert.deepEqual(
     skills.map((a) => a.target),
@@ -88,25 +89,25 @@ test('applyAction copies directories and files', async () => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test('findBrokenLinks flags dead links into the repo, ignores foreign ones', () => {
+test('findBrokenLinks flags dead links into our roots, ignores foreign ones', () => {
   const root = tmp();
+  const storeDir = path.join(root, 'store');
   const repoRoot = path.join(root, 'repo');
   const projectRoot = path.join(root, 'proj');
   const skillsDir = path.join(projectRoot, '.claude', 'skills');
   fs.mkdirSync(skillsDir, { recursive: true });
 
-  const alive = path.join(repoRoot, 'skills', 'active', 'alive');
+  const alive = path.join(storeDir, 'skills', 'alive');
   fs.mkdirSync(alive, { recursive: true });
   fs.symlinkSync(alive, path.join(skillsDir, 'alive'));
-  // Dead link into the repo (skill moved between group folders).
-  fs.symlinkSync(path.join(repoRoot, 'skills', 'experimenting', 'gone'), path.join(skillsDir, 'gone'));
-  // Dead link NOT into the repo — someone else's, leave it alone.
+  // Dead link into the store (skill removed from it).
+  fs.symlinkSync(path.join(storeDir, 'skills', 'gone'), path.join(skillsDir, 'gone'));
+  // Dead link into the repo (old repo-pointing scheme).
+  fs.symlinkSync(path.join(repoRoot, 'skills', 'experimenting', 'old'), path.join(skillsDir, 'old'));
+  // Dead link NOT into store or repo — someone else's, leave it alone.
   fs.symlinkSync(path.join(root, 'elsewhere', 'gone'), path.join(skillsDir, 'foreign'));
 
-  const broken = findBrokenLinks({ agentIds: ['claude'], scope: 'project', home: root, projectRoot, repoRoot });
-  assert.deepEqual(
-    broken.map((b) => path.basename(b.link)),
-    ['gone'],
-  );
+  const broken = findBrokenLinks({ agentIds: ['claude'], scope: 'project', home: root, projectRoot, roots: [storeDir, repoRoot] });
+  assert.deepEqual(broken.map((b) => path.basename(b.link)).sort(), ['gone', 'old']);
   fs.rmSync(root, { recursive: true, force: true });
 });

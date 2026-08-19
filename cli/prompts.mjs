@@ -142,6 +142,26 @@ export function select(message, options, initial = 0) {
   });
 }
 
+export function text(message, { initial = '' } = {}) {
+  let value = initial;
+  const render = () =>
+    [
+      `${cyan('◆')} ${bold(message)}`,
+      `${dim('│')} ${value ? cyan(value) : dim('(empty)')}`,
+      dim('└ type to edit · enter confirm'),
+    ].join('\n');
+  return runPrompt({
+    render,
+    renderDone: (v) => doneLine(message, v),
+    onKey: (key, str) => {
+      if (key.name === 'return') {
+        if (value.trim()) return { value: value.trim() };
+      } else if (key.name === 'backspace') value = value.slice(0, -1);
+      else if (str && !key.ctrl && !key.meta && str >= ' ') value += str;
+    },
+  });
+}
+
 export function confirm(message, initial = true) {
   let value = initial;
   const render = () => {
