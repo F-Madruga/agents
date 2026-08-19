@@ -4,7 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GROUPS, loadSkills } from './skills.mjs';
 import { AGENTS, planInstall, applyAction, findBrokenLinks } from './install.mjs';
-import { intro, outro, note, multiselect, select, confirm, dim, green, yellow, red, bold } from './prompts.mjs';
+import { defaultStorePath, readSavedStorePath, saveStorePath, syncItem } from './store.mjs';
+import { intro, outro, note, multiselect, select, confirm, text, dim, green, yellow, red, bold } from './prompts.mjs';
 import fs from 'node:fs';
 
 const HELP = `Usage: agents [flags]
@@ -16,6 +17,8 @@ Interactive by default; every flag skips its prompt.
   --scope=SCOPE       global | project
   --method=METHOD     symlink | copy
   --agents-md         Also install AGENTS.md (--no-agents-md to skip)
+  --store=PATH        Where to keep the installed files (default ~/.config/agents,
+                      or the location chosen last time)
   --force             Overwrite existing files without asking
   -h, --help          Show this help
 `;
@@ -37,6 +40,7 @@ function parseArgs(argv) {
     else if (arg.startsWith('--agents=')) flags.agents = arg.slice('--agents='.length).split(',').filter(Boolean);
     else if (arg.startsWith('--scope=')) flags.scope = arg.slice('--scope='.length);
     else if (arg.startsWith('--method=')) flags.method = arg.slice('--method='.length);
+    else if (arg.startsWith('--store=')) flags.store = arg.slice('--store='.length);
     else fail(`Unknown flag: ${arg}\n\n${HELP}`);
   }
   if (flags.scope && !['global', 'project'].includes(flags.scope)) fail(`--scope must be global or project`);
@@ -124,14 +128,39 @@ async function main() {
   const method =
     flags.method ??
     (await select('How?', [
-      { label: 'Symlink', value: 'symlink', description: 'single source of truth, updates with this repo' },
+      { label: 'Symlink', value: 'symlink', description: 'links to one shared copy, updates in one place' },
       { label: 'Copy', value: 'copy', description: 'independent files, updated manually' },
     ]));
 
-  // Heal symlinks broken by skills moving between group folders.
-  const broken = findBrokenLinks({ agentIds, scope, home, projectRoot, repoRoot });
+  // 6. Store location (default ~/.config/agents, remembered across runs).
+  const suggestedStore = flags.store ?? readSavedStorePath() ?? defaultStorePath();
+  let storeDir = process.stdin.isTTY && !flags.store
+    ? await text('Where should skills be stored?', { initial: suggestedStore })
+    : suggestedStore;
+  if (storeDir.startsWith('~/')) storeDir = path.join(home, storeDir.slice(2));
+  storeDir = path.resolve(storeDir);
+  saveStorePath(storeDir);
+
+  // Sync repo -> store. Identical items are skipped silently; items that
+  // differ (e.g. manual edits in the store) are only replaced with consent.
+  const interactive = process.stdin.isTTY && !flags.force;
+  const resolveStoreConflict = interactive
+    ? (target) => confirm(`${target} differs from the repo version (your edits?). Overwrite it?`, false)
+    : () => flags.force === true;
+  const counts = { added: 0, same: 0, updated: 0, kept: 0 };
+  const syncTargets = skills.map((s) => ({ source: s.path, target: path.join(storeDir, 'skills', s.dirName) }));
+  if (includeInstructions) syncTargets.push({ source: instructionsSource, target: path.join(storeDir, 'AGENTS.md') });
+  for (const { source, target } of syncTargets) {
+    const result = await syncItem(source, target, { resolveConflict: resolveStoreConflict });
+    counts[result]++;
+    if (result === 'kept') note(`${yellow('▲')} kept your version of ${target}`);
+  }
+  note(dim(`Store ${storeDir}: ${counts.added} added, ${counts.updated} updated, ${counts.same} unchanged, ${counts.kept} kept.`));
+
+  // Heal symlinks broken by removed skills or the old repo-pointing scheme.
+  const broken = findBrokenLinks({ agentIds, scope, home, projectRoot, roots: [storeDir, repoRoot] });
   if (broken.length > 0) {
-    note(yellow(`Found ${broken.length} broken symlink(s) pointing into this repo:`));
+    note(yellow(`Found ${broken.length} broken symlink(s) left behind:`));
     for (const b of broken) note(dim(`  ${b.link} → ${b.dest}`));
     const remove = flags.force || !process.stdin.isTTY ? true : await confirm('Remove them?');
     if (remove) {
@@ -140,9 +169,8 @@ async function main() {
     }
   }
 
-  // Install
-  const actions = planInstall({ skills, agentIds, scope, method, includeInstructions, repoRoot, projectRoot, home });
-  const interactive = process.stdin.isTTY && !flags.force;
+  // Install from the store into each agent.
+  const actions = planInstall({ skills, agentIds, scope, method, includeInstructions, storeDir, projectRoot, home });
   const resolveConflict = interactive
     ? (action) => confirm(`${action.target} already exists. Overwrite?`, false)
     : () => flags.force === true;

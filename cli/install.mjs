@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { treesEqual } from './store.mjs';
 
 export const AGENTS = [
   { id: 'claude', label: 'Claude Code' },
@@ -33,9 +34,10 @@ export function resolveTargets(agentId, scope, { home, projectRoot }) {
   };
 }
 
-// Returns [{ kind, method, source, target, label }]. Targets shared between
-// agents (e.g. project AGENTS.md for Cursor + Codex) are deduped.
-export function planInstall({ skills, agentIds, scope, method, includeInstructions, repoRoot, projectRoot, home }) {
+// Returns [{ kind, method, source, target, label }]. Sources point into the
+// store, never at the repo. Targets shared between agents (e.g. project
+// AGENTS.md for Cursor + Codex) are deduped.
+export function planInstall({ skills, agentIds, scope, method, includeInstructions, storeDir, projectRoot, home }) {
   const actions = [];
   const seen = new Set();
   for (const agentId of agentIds) {
@@ -48,7 +50,7 @@ export function planInstall({ skills, agentIds, scope, method, includeInstructio
       actions.push({
         kind: 'skill',
         method,
-        source: skill.path,
+        source: path.join(storeDir, 'skills', skill.dirName),
         target,
         label: `${skill.dirName} → ${agent.label}`,
       });
@@ -58,7 +60,7 @@ export function planInstall({ skills, agentIds, scope, method, includeInstructio
       actions.push({
         kind: 'instructions',
         method,
-        source: path.join(repoRoot, 'instructions', 'AGENTS.md'),
+        source: path.join(storeDir, 'AGENTS.md'),
         target: targets.instructionsFile,
         label: `${path.basename(targets.instructionsFile)} → ${agent.label}`,
       });
@@ -81,6 +83,7 @@ export async function applyAction(action, { resolveConflict } = {}) {
       const current = path.resolve(path.dirname(target), fs.readlinkSync(target));
       if (current === source) return 'already';
     }
+    if (!existing.isSymbolicLink() && method === 'copy' && treesEqual(source, target)) return 'already';
     const overwrite = resolveConflict ? await resolveConflict(action) : false;
     if (!overwrite) return 'skipped';
     fs.rmSync(target, { recursive: true, force: true });
@@ -97,11 +100,12 @@ export async function applyAction(action, { resolveConflict } = {}) {
   return 'copied';
 }
 
-// Symlinks in the selected agents' target dirs that point into this repo but
-// no longer resolve (e.g. a skill moved between group folders).
-export function findBrokenLinks({ agentIds, scope, home, projectRoot, repoRoot }) {
+// Symlinks in the selected agents' target dirs that point into one of ours
+// (store or repo) but no longer resolve (e.g. a removed skill, or links from
+// the old repo-pointing scheme).
+export function findBrokenLinks({ agentIds, scope, home, projectRoot, roots }) {
   const broken = new Map();
-  const root = path.resolve(repoRoot);
+  const resolvedRoots = roots.map((r) => path.resolve(r));
   for (const agentId of agentIds) {
     const targets = resolveTargets(agentId, scope, { home, projectRoot });
     const candidates = [targets.instructionsFile];
@@ -119,7 +123,7 @@ export function findBrokenLinks({ agentIds, scope, home, projectRoot, repoRoot }
       }
       if (!stat.isSymbolicLink()) continue;
       const dest = path.resolve(path.dirname(candidate), fs.readlinkSync(candidate));
-      if (dest.startsWith(root + path.sep) && !fs.existsSync(dest)) {
+      if (resolvedRoots.some((r) => dest.startsWith(r + path.sep)) && !fs.existsSync(dest)) {
         broken.set(candidate, { link: candidate, dest });
       }
     }
