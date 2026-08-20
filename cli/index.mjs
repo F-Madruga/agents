@@ -78,7 +78,7 @@ async function main() {
     note(dim('No skills found in skills/ yet.'));
     skills = [];
   } else {
-    note(dim("Heads up: some skills depend on others (e.g. grill-me needs grilling, html-communication needs npx postplan)."));
+    note(dim("Heads up: some skills depend on others (e.g. grill-me needs grilling)."));
     const groups = GROUPS.map((g) => ({
       label: g.label,
       options: allSkills
