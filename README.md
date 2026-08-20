@@ -21,16 +21,15 @@ It asks:
 2. Whether to also set up my AGENTS.md
 3. Which agents to set them up for
 4. Whether to set up for the whole machine or just the current project
-5. Whether to link the files (one shared copy, updated in one place) or copy
-   them (independent files that stay as they are)
-6. Where to keep that shared copy (default `~/.config/agents`, remembered for
-   next time)
+5. Where to keep the shared copy that everything links to (default
+   `~/.config/agents`, remembered for next time)
 
-Everything is installed from that shared folder, so it works the same whether
-you cloned this repo or ran it with npx. You can edit the files there by hand;
-the CLI asks before replacing anything you changed, and never overwrites any
-existing file without asking. Run it again anytime; it skips what's already in
-place and cleans up links left behind by removed skills.
+Each agent gets links pointing at that shared folder, so updating a skill
+there updates it everywhere, and it works the same whether you cloned this
+repo or ran it with npx. You can edit the files there by hand; the CLI asks
+before replacing anything you changed, and never overwrites any existing file
+without asking. Run it again anytime; it skips what's already in place and
+cleans up links left behind by removed skills.
 
 Every question can also be answered up front with a flag — see:
 

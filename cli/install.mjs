@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { treesEqual } from './store.mjs';
 
 export const AGENTS = [
   { id: 'claude', label: 'Claude Code' },
@@ -34,10 +33,10 @@ export function resolveTargets(agentId, scope, { home, projectRoot }) {
   };
 }
 
-// Returns [{ kind, method, source, target, label }]. Sources point into the
-// store, never at the repo. Targets shared between agents (e.g. project
-// AGENTS.md for Cursor + Codex) are deduped.
-export function planInstall({ skills, agentIds, scope, method, includeInstructions, storeDir, projectRoot, home }) {
+// Returns [{ kind, source, target, label }]. Sources point into the store,
+// never at the repo. Targets shared between agents (e.g. project AGENTS.md
+// for Cursor + Codex) are deduped.
+export function planInstall({ skills, agentIds, scope, includeInstructions, storeDir, projectRoot, home }) {
   const actions = [];
   const seen = new Set();
   for (const agentId of agentIds) {
@@ -49,7 +48,6 @@ export function planInstall({ skills, agentIds, scope, method, includeInstructio
       seen.add(target);
       actions.push({
         kind: 'skill',
-        method,
         source: path.join(storeDir, 'skills', skill.dirName),
         target,
         label: `${skill.dirName} → ${agent.label}`,
@@ -59,7 +57,6 @@ export function planInstall({ skills, agentIds, scope, method, includeInstructio
       seen.add(targets.instructionsFile);
       actions.push({
         kind: 'instructions',
-        method,
         source: path.join(storeDir, 'AGENTS.md'),
         target: targets.instructionsFile,
         label: `${path.basename(targets.instructionsFile)} → ${agent.label}`,
@@ -69,35 +66,26 @@ export function planInstall({ skills, agentIds, scope, method, includeInstructio
   return actions;
 }
 
-// Returns 'already' | 'skipped' | 'linked' | 'copied'.
+// Returns 'already' | 'skipped' | 'linked'.
 export async function applyAction(action, { resolveConflict } = {}) {
   const source = path.resolve(action.source);
-  const { target, method } = action;
+  const { target } = action;
   fs.mkdirSync(path.dirname(target), { recursive: true });
   let existing;
   try {
     existing = fs.lstatSync(target);
   } catch {}
   if (existing) {
-    if (existing.isSymbolicLink() && method === 'symlink') {
+    if (existing.isSymbolicLink()) {
       const current = path.resolve(path.dirname(target), fs.readlinkSync(target));
       if (current === source) return 'already';
     }
-    if (!existing.isSymbolicLink() && method === 'copy' && treesEqual(source, target)) return 'already';
     const overwrite = resolveConflict ? await resolveConflict(action) : false;
     if (!overwrite) return 'skipped';
     fs.rmSync(target, { recursive: true, force: true });
   }
-  if (method === 'symlink') {
-    fs.symlinkSync(source, target, fs.statSync(source).isDirectory() ? 'dir' : 'file');
-    return 'linked';
-  }
-  if (fs.statSync(source).isDirectory()) {
-    fs.cpSync(source, target, { recursive: true });
-  } else {
-    fs.copyFileSync(source, target);
-  }
-  return 'copied';
+  fs.symlinkSync(source, target, fs.statSync(source).isDirectory() ? 'dir' : 'file');
+  return 'linked';
 }
 
 // Symlinks in the selected agents' target dirs that point into one of ours

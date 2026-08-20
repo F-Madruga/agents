@@ -10,9 +10,10 @@ CLI that installs them on a machine or into a project.
   installs for each agent. Not the file you are reading now.
 - `cli/` — the setup CLI. Plain Node, no dependencies, no build step. Keep it
   that way. Run the tests with `npm test`. It installs everything through a
-  store folder (default `~/.config/agents`): repo → store → symlinks/copies in
-  each agent. The store is flat (no group folders) and may contain manual
-  edits, so syncing to it must ask before overwriting differing files.
+  store folder (default `~/.config/agents`): repo → store → symlinks in each
+  agent (symlinks only, no copy mode). The store is flat (no group folders)
+  and may contain manual edits, so syncing to it must ask before overwriting
+  differing files.
 
 ## Adding a skill from somewhere else
 
