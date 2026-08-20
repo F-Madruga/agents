@@ -15,10 +15,9 @@ Interactive by default; every flag skips its prompt.
   --skills=a,b        Skill folder names to install (or --all-skills)
   --agents=ids        Comma-separated: ${AGENTS.map((a) => a.id).join(', ')}
   --scope=SCOPE       global | project
-  --method=METHOD     symlink | copy
   --agents-md         Also install AGENTS.md (--no-agents-md to skip)
-  --store=PATH        Where to keep the installed files (default ~/.config/agents,
-                      or the location chosen last time)
+  --store=PATH        Where to keep the files the symlinks point to
+                      (default ~/.config/agents, or the location chosen last time)
   --force             Overwrite existing files without asking
   -h, --help          Show this help
 `;
@@ -39,12 +38,10 @@ function parseArgs(argv) {
     else if (arg.startsWith('--skills=')) flags.skills = arg.slice('--skills='.length).split(',').filter(Boolean);
     else if (arg.startsWith('--agents=')) flags.agents = arg.slice('--agents='.length).split(',').filter(Boolean);
     else if (arg.startsWith('--scope=')) flags.scope = arg.slice('--scope='.length);
-    else if (arg.startsWith('--method=')) flags.method = arg.slice('--method='.length);
     else if (arg.startsWith('--store=')) flags.store = arg.slice('--store='.length);
     else fail(`Unknown flag: ${arg}\n\n${HELP}`);
   }
   if (flags.scope && !['global', 'project'].includes(flags.scope)) fail(`--scope must be global or project`);
-  if (flags.method && !['symlink', 'copy'].includes(flags.method)) fail(`--method must be symlink or copy`);
   if (flags.agents) {
     for (const id of flags.agents) {
       if (!AGENTS.some((a) => a.id === id)) fail(`Unknown agent: ${id} (expected ${AGENTS.map((a) => a.id).join(', ')})`);
@@ -124,15 +121,7 @@ async function main() {
       { label: 'This project', value: 'project', description: projectRoot },
     ]));
 
-  // 5. Method
-  const method =
-    flags.method ??
-    (await select('How?', [
-      { label: 'Symlink', value: 'symlink', description: 'links to one shared copy, updates in one place' },
-      { label: 'Copy', value: 'copy', description: 'independent files, updated manually' },
-    ]));
-
-  // 6. Store location (default ~/.config/agents, remembered across runs).
+  // 5. Store location (default ~/.config/agents, remembered across runs).
   const suggestedStore = flags.store ?? readSavedStorePath() ?? defaultStorePath();
   let storeDir = process.stdin.isTTY && !flags.store
     ? await text('Where should skills be stored?', { initial: suggestedStore })
@@ -169,21 +158,21 @@ async function main() {
     }
   }
 
-  // Install from the store into each agent.
-  const actions = planInstall({ skills, agentIds, scope, method, includeInstructions, storeDir, projectRoot, home });
+  // Symlink from the store into each agent.
+  const actions = planInstall({ skills, agentIds, scope, includeInstructions, storeDir, projectRoot, home });
   const resolveConflict = interactive
     ? (action) => confirm(`${action.target} already exists. Overwrite?`, false)
     : () => flags.force === true;
 
-  const icons = { linked: green('✔'), copied: green('✔'), already: dim('●'), skipped: yellow('▲') };
-  const words = { linked: 'linked', copied: 'copied', already: 'already set up', skipped: 'skipped (exists)' };
+  const icons = { linked: green('✔'), already: dim('●'), skipped: yellow('▲') };
+  const words = { linked: 'linked', already: 'already set up', skipped: 'skipped (exists)' };
   let changed = 0;
   for (const action of actions) {
     const result = await applyAction(action, { resolveConflict });
-    if (result === 'linked' || result === 'copied') changed++;
+    if (result === 'linked') changed++;
     note(`${icons[result]} ${action.label} ${dim(`· ${words[result]} · ${action.target}`)}`);
   }
-  outro(bold(`Done — ${changed} ${method === 'symlink' ? 'linked' : 'copied'}, ${actions.length - changed} untouched.`));
+  outro(bold(`Done — ${changed} linked, ${actions.length - changed} untouched.`));
 }
 
 main().catch((err) => fail(err.message));

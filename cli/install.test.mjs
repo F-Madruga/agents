@@ -32,7 +32,6 @@ test('planInstall dedupes the shared project AGENTS.md and sources from the stor
     skills: [{ dirName: 'tdd', path: '/repo/skills/active/tdd' }],
     agentIds: ['cursor', 'codex'],
     scope: 'project',
-    method: 'symlink',
     includeInstructions: true,
     storeDir: '/home/u/.config/agents',
     projectRoot: '/proj',
@@ -56,7 +55,7 @@ test('applyAction symlinks, detects already-installed, and respects conflicts', 
   fs.mkdirSync(source, { recursive: true });
   fs.writeFileSync(path.join(source, 'SKILL.md'), 'x');
   const target = path.join(root, 'proj', '.claude', 'skills', 'skill');
-  const action = { method: 'symlink', source, target };
+  const action = { source, target };
 
   assert.equal(await applyAction(action), 'linked');
   assert.equal(fs.readlinkSync(target), source);
@@ -68,24 +67,6 @@ test('applyAction symlinks, detects already-installed, and respects conflicts', 
   assert.equal(await applyAction(action), 'skipped');
   assert.equal(await applyAction(action, { resolveConflict: async () => true }), 'linked');
   assert.equal(fs.readlinkSync(target), source);
-  fs.rmSync(root, { recursive: true, force: true });
-});
-
-test('applyAction copies directories and files', async () => {
-  const root = tmp();
-  const dirSource = path.join(root, 'repo', 'skill');
-  fs.mkdirSync(dirSource, { recursive: true });
-  fs.writeFileSync(path.join(dirSource, 'SKILL.md'), 'content');
-  const dirTarget = path.join(root, 'out', 'skill');
-  assert.equal(await applyAction({ method: 'copy', source: dirSource, target: dirTarget }), 'copied');
-  assert.equal(fs.readFileSync(path.join(dirTarget, 'SKILL.md'), 'utf8'), 'content');
-  assert.ok(!fs.lstatSync(dirTarget).isSymbolicLink());
-
-  const fileSource = path.join(root, 'repo', 'AGENTS.md');
-  fs.writeFileSync(fileSource, 'instructions');
-  const fileTarget = path.join(root, 'out', 'CLAUDE.md');
-  assert.equal(await applyAction({ method: 'copy', source: fileSource, target: fileTarget }), 'copied');
-  assert.equal(fs.readFileSync(fileTarget, 'utf8'), 'instructions');
   fs.rmSync(root, { recursive: true, force: true });
 });
 
