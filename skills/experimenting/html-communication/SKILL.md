@@ -2,9 +2,6 @@
 name: html-communication
 description: Use when the user asks to communicate through an HTML document, or if they mention "HTML" with no additional context.
 metadata:
-  harness: [claude, codex]
-  platform: [darwin, linux]
-  scope: fleet
   requires: "npx (postplan is run via npx)"
 ---
 
