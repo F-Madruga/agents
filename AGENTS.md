@@ -33,3 +33,6 @@ When I ask you to add a skill from GitHub or anywhere else:
 3. Check whether the skill depends on anything else, like other skills,
    scripts, or reference files it mentions. Add those too, each with its own
    `SOURCE.md`.
+4. The copy must be exact. Pin to the newest commit that touches that skill's
+   own folder, not a commit picked for a different skill, and diff every
+   copied file against the source at that commit before finishing.
