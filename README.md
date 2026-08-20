@@ -1,7 +1,7 @@
 # agents
 
-My skills and my personal AGENTS.md, shared between the coding agents I use
-(Claude Code, Cursor, Codex). The CLI in this repo sets everything up for me.
+My skills and my personal `AGENTS.md`, shared between the coding agents I use:
+Claude Code, Cursor, and Codex. The CLI in this repo sets everything up for me.
 
 ## Usage
 
@@ -21,24 +21,21 @@ It asks:
 2. Whether to also set up my AGENTS.md
 3. Which agents to set them up for
 4. Whether to set up for the whole machine or just the current project
-5. Where to keep the shared copy that everything links to (default
-   `~/.config/agents`, remembered for next time)
+5. Where to keep the shared copy that everything links to. Defaults to
+   `~/.config/agents` and remembers your answer.
 
-Each agent gets links pointing at that shared folder, so updating a skill
-there updates it everywhere, and it works the same whether you cloned this
-repo or ran it with npx. You can edit the files there by hand; the CLI asks
-before replacing anything you changed, and never overwrites any existing file
-without asking. Run it again anytime; it skips what's already in place and
+Each agent gets links to that shared folder, so updating a skill there updates
+it everywhere. This works the same whether you cloned this repo or ran it with
+npx. You can edit the files in that folder by hand; the CLI asks before
+replacing anything you changed, and it never overwrites an existing file
+without asking. Run it again anytime. It skips what's already in place and
 cleans up links left behind by removed skills.
 
-Every question can also be answered up front with a flag — see:
-
-```sh
-node cli/index.mjs --help
-```
+You can also answer every question up front with a flag. Run
+`node cli/index.mjs --help` to see them.
 
 ## License
 
-MIT, except some skills that were copied from other people's repos and keep
-their original license. Each of those has a `SOURCE.md` in its folder saying
-where it came from and under which license. Use at your own risk.
+MIT, except the skills I copied from other people's repos; those keep their
+original license. Each one has a `SOURCE.md` in its folder saying where it
+came from and under which license. Use at your own risk.
