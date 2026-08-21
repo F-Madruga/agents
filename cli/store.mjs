@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { STORE_DIR_NAME, STORE_CONFIG_FILE } from './constants.mjs';
 
 // The store is a flat folder holding the installed copies of skills and
 // AGENTS.md. Agent symlinks point here (never at the repo or the npx cache),
@@ -8,12 +9,12 @@ import path from 'node:path';
 
 export function defaultStorePath(env = process.env, home = os.homedir()) {
   const base = env.XDG_CONFIG_HOME || path.join(home, '.config');
-  return path.join(base, 'agents');
+  return path.join(base, STORE_DIR_NAME);
 }
 
 // The pointer to a custom store location always lives at the DEFAULT
 // location, so it can be found again without knowing the custom path.
-const configFile = (env, home) => path.join(defaultStorePath(env, home), 'config.json');
+const configFile = (env, home) => path.join(defaultStorePath(env, home), STORE_CONFIG_FILE);
 
 export function readSavedStorePath(env = process.env, home = os.homedir()) {
   try {
