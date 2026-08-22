@@ -33,6 +33,11 @@ When I ask you to add a skill from GitHub or anywhere else:
 3. Check whether the skill depends on anything else, like other skills,
    scripts, or reference files it mentions. Add those too, each with its own
    `SOURCE.md`.
-4. The copy must be exact. Pin to the newest commit that touches that skill's
-   own folder, not a commit picked for a different skill, and diff every
-   copied file against the source at that commit before finishing.
+4. Every file you copy, the skill's and its dependencies', must match the
+   source character for character. No reformatting, no rewording, no dropped
+   sections, no typo fixes. Pin to the newest commit that touches that skill's
+   own folder, not a commit picked for a different skill. Diff every copied file
+   against the source at that commit before finishing. The diff must be empty.
+   `SOURCE.md` is the only file you add. If the skill has to change, copy it
+   exactly first, then change it in a separate step and list the change in
+   `SOURCE.md`.
