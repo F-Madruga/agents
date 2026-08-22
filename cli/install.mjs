@@ -88,6 +88,45 @@ export async function applyAction(action, { resolveConflict } = {}) {
   return 'linked';
 }
 
+// Symlinks in any agent's skills dir at this scope that point at `dest`,
+// whether or not `dest` still exists. Used to pull a skill back out.
+export function findLinksTo(dest, { scope, home, projectRoot }) {
+  const resolved = path.resolve(dest);
+  const found = new Set();
+  for (const agent of AGENTS) {
+    const { skillsDir } = resolveTargets(agent.id, scope, { home, projectRoot });
+    let entries;
+    try {
+      entries = fs.readdirSync(skillsDir);
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const link = path.join(skillsDir, entry);
+      let stat;
+      try {
+        stat = fs.lstatSync(link);
+      } catch {
+        continue;
+      }
+      if (!stat.isSymbolicLink()) continue;
+      if (path.resolve(path.dirname(link), fs.readlinkSync(link)) === resolved) found.add(link);
+    }
+  }
+  return [...found];
+}
+
+// Deletes a skill's store copy and every symlink pointing at it, across all
+// agents at this scope (not just the selected ones: once the store copy is
+// gone, any link to it is dead). Returns the links removed.
+export function removeStoreSkill(dirName, { storeDir, scope, home, projectRoot }) {
+  const storePath = path.join(storeDir, 'skills', dirName);
+  const links = findLinksTo(storePath, { scope, home, projectRoot });
+  for (const link of links) fs.rmSync(link, { force: true });
+  fs.rmSync(storePath, { recursive: true, force: true });
+  return links;
+}
+
 // Symlinks in the selected agents' target dirs that point into one of ours
 // (store or repo) but no longer resolve (e.g. a removed skill, or links from
 // the old repo-pointing scheme).

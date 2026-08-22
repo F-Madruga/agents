@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolveTargets, planInstall, applyAction, findBrokenLinks } from './install.mjs';
+import { resolveTargets, planInstall, applyAction, findBrokenLinks, findLinksTo, removeStoreSkill } from './install.mjs';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'agents-install-'));
 
@@ -90,5 +90,37 @@ test('findBrokenLinks flags dead links into our roots, ignores foreign ones', ()
 
   const broken = findBrokenLinks({ agentIds: ['claude'], scope: 'project', home: root, projectRoot, roots: [storeDir, repoRoot] });
   assert.deepEqual(broken.map((b) => path.basename(b.link)).sort(), ['gone', 'old']);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('removeStoreSkill deletes the store copy and every link to it, across agents', () => {
+  const root = tmp();
+  const storeDir = path.join(root, 'store');
+  const projectRoot = path.join(root, 'proj');
+  const skill = path.join(storeDir, 'skills', 'unslop');
+  const keep = path.join(storeDir, 'skills', 'grilling');
+  fs.mkdirSync(skill, { recursive: true });
+  fs.mkdirSync(keep, { recursive: true });
+  fs.writeFileSync(path.join(skill, 'SKILL.md'), 'x');
+
+  // Same skill linked from two agents, plus an unrelated link that must survive.
+  const claudeDir = path.join(projectRoot, '.claude', 'skills');
+  const codexDir = path.join(projectRoot, '.agents', 'skills');
+  fs.mkdirSync(claudeDir, { recursive: true });
+  fs.mkdirSync(codexDir, { recursive: true });
+  fs.symlinkSync(skill, path.join(claudeDir, 'unslop'));
+  fs.symlinkSync(skill, path.join(codexDir, 'unslop'));
+  fs.symlinkSync(keep, path.join(claudeDir, 'grilling'));
+
+  const env = { storeDir, scope: 'project', home: root, projectRoot };
+  assert.equal(findLinksTo(skill, env).length, 2);
+
+  const removed = removeStoreSkill('unslop', env);
+  assert.deepEqual(removed.map((l) => path.basename(path.dirname(path.dirname(l)))).sort(), ['.agents', '.claude']);
+  assert.equal(fs.existsSync(skill), false);
+  assert.equal(fs.existsSync(path.join(claudeDir, 'unslop')), false);
+  assert.equal(fs.existsSync(path.join(codexDir, 'unslop')), false);
+  assert.equal(fs.existsSync(path.join(claudeDir, 'grilling')), true);
+  assert.equal(fs.existsSync(keep), true);
   fs.rmSync(root, { recursive: true, force: true });
 });
