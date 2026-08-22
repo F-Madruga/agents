@@ -17,12 +17,14 @@ node cli/index.mjs
 
 It asks:
 
-1. Which skills to set up
-2. Whether to also set up my AGENTS.md
-3. Which agents to set them up for
-4. Whether to set up for the whole machine or just the current project
-5. Where to keep the shared copy that everything links to. Defaults to
-   `~/.config/agents` and remembers your answer.
+1. Whether to set up for the whole machine or just the current project
+2. Where to keep the shared copy that everything links to. Global installs
+   default to `~/.config/agents` and remember your answer; project installs
+   default to `.agents-store/` inside the project, which you'll want to
+   gitignore.
+3. Which skills to set up
+4. Whether to also set up my AGENTS.md
+5. Which agents to set them up for
 
 Each agent gets links to that shared folder, so updating a skill there updates
 it everywhere. This works the same whether you cloned this repo or ran it with

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { STORE_DIR_NAME, STORE_CONFIG_FILE } from './constants.mjs';
+import { STORE_DIR_NAME, STORE_CONFIG_FILE, PROJECT_STORE_DIR_NAME } from './constants.mjs';
 
 // The store is a flat folder holding the installed copies of skills and
 // AGENTS.md. Agent symlinks point here (never at the repo or the npx cache),
@@ -10,6 +10,13 @@ import { STORE_DIR_NAME, STORE_CONFIG_FILE } from './constants.mjs';
 export function defaultStorePath(env = process.env, home = os.homedir()) {
   const base = env.XDG_CONFIG_HOME || path.join(home, '.config');
   return path.join(base, STORE_DIR_NAME);
+}
+
+// Project installs keep their store inside the project. It holds machine-local
+// copies and the symlinks pointing at it are absolute, so it belongs in
+// .gitignore rather than in the repo.
+export function projectStorePath(projectRoot) {
+  return path.join(projectRoot, PROJECT_STORE_DIR_NAME);
 }
 
 // The pointer to a custom store location always lives at the DEFAULT

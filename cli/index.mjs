@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GROUPS, loadSkills } from './skills.mjs';
 import { AGENTS, planInstall, applyAction, findBrokenLinks } from './install.mjs';
-import { defaultStorePath, readSavedStorePath, saveStorePath, syncItem } from './store.mjs';
+import { defaultStorePath, projectStorePath, readSavedStorePath, saveStorePath, syncItem } from './store.mjs';
 import { intro, outro, note, multiselect, select, confirm, text, dim, green, yellow, red, bold } from './prompts.mjs';
 import fs from 'node:fs';
 
@@ -12,12 +12,13 @@ const HELP = `Usage: agents [flags]
 
 Interactive by default; every flag skips its prompt.
 
+  --scope=SCOPE       global | project
+  --store=PATH        Where to keep the files the symlinks point to
+                      (global: ~/.config/agents, or the location chosen last
+                      time; project: <project>/.agents-store)
   --skills=a,b        Skill folder names to install (or --all-skills)
   --agents=ids        Comma-separated: ${AGENTS.map((a) => a.id).join(', ')}
-  --scope=SCOPE       global | project
   --agents-md         Also install AGENTS.md (--no-agents-md to skip)
-  --store=PATH        Where to keep the files the symlinks point to
-                      (default ~/.config/agents, or the location chosen last time)
   --force             Overwrite existing files without asking
   -h, --help          Show this help
 `;
@@ -63,7 +64,27 @@ async function main() {
 
   intro('agents · skills & AGENTS.md setup');
 
-  // 1. Skills
+  // 1. Scope
+  const scope =
+    flags.scope ??
+    (await select('Where do you want this set up?', [
+      { label: 'Global', value: 'global', description: `~ (${home})` },
+      { label: 'This project', value: 'project', description: projectRoot },
+    ]));
+
+  // 2. Store location. Global installs default to ~/.config/agents and
+  // remember a custom answer across runs; project installs stay in the project.
+  const suggestedStore =
+    flags.store ??
+    (scope === 'project' ? projectStorePath(projectRoot) : readSavedStorePath() ?? defaultStorePath());
+  let storeDir = process.stdin.isTTY && !flags.store
+    ? await text('Where should skills be stored?', { initial: suggestedStore })
+    : suggestedStore;
+  if (storeDir.startsWith('~/')) storeDir = path.join(home, storeDir.slice(2));
+  storeDir = path.resolve(storeDir);
+  if (scope === 'global') saveStorePath(storeDir);
+
+  // 3. Skills
   const allSkills = loadSkills(repoRoot);
   let skills;
   if (flags.skills === 'all') {
@@ -88,7 +109,7 @@ async function main() {
     skills = await multiselect('Which skills do you want to set up?', groups);
   }
 
-  // 2. AGENTS.md
+  // 4. AGENTS.md
   const instructionsSource = path.join(repoRoot, 'instructions', 'AGENTS.md');
   let includeInstructions = flags.agentsMd;
   if (includeInstructions === undefined) {
@@ -103,7 +124,7 @@ async function main() {
     return;
   }
 
-  // 3. Agents
+  // 5. Agents
   const agentIds =
     flags.agents ??
     (await multiselect('Which agents?', [
@@ -113,23 +134,6 @@ async function main() {
     outro(dim('No agents selected — nothing to do.'));
     return;
   }
-
-  // 4. Scope
-  const scope =
-    flags.scope ??
-    (await select('Where?', [
-      { label: 'Global', value: 'global', description: `~ (${home})` },
-      { label: 'This project', value: 'project', description: projectRoot },
-    ]));
-
-  // 5. Store location (default ~/.config/agents, remembered across runs).
-  const suggestedStore = flags.store ?? readSavedStorePath() ?? defaultStorePath();
-  let storeDir = process.stdin.isTTY && !flags.store
-    ? await text('Where should skills be stored?', { initial: suggestedStore })
-    : suggestedStore;
-  if (storeDir.startsWith('~/')) storeDir = path.join(home, storeDir.slice(2));
-  storeDir = path.resolve(storeDir);
-  saveStorePath(storeDir);
 
   // Sync repo -> store. Identical items are skipped silently; items that
   // differ (e.g. manual edits in the store) are only replaced with consent.

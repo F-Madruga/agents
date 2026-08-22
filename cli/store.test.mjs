@@ -3,13 +3,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { defaultStorePath, readSavedStorePath, saveStorePath, treesEqual, syncItem } from './store.mjs';
+import { defaultStorePath, projectStorePath, readSavedStorePath, saveStorePath, treesEqual, syncItem } from './store.mjs';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'agents-store-'));
 
 test('defaultStorePath uses XDG_CONFIG_HOME when set, ~/.config otherwise', () => {
   assert.equal(defaultStorePath({ XDG_CONFIG_HOME: '/xdg' }, '/home/u'), path.join('/xdg', 'agents'));
   assert.equal(defaultStorePath({}, '/home/u'), path.join('/home/u', '.config', 'agents'));
+});
+
+test('projectStorePath puts the store inside the project', () => {
+  assert.equal(projectStorePath('/work/app'), path.join('/work/app', '.agents-store'));
 });
 
 test('saveStorePath / readSavedStorePath round-trip via the default location', () => {
