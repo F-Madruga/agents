@@ -3,8 +3,16 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GROUPS, loadSkills } from './skills.mjs';
-import { AGENTS, planInstall, applyAction, findBrokenLinks } from './install.mjs';
-import { defaultStorePath, projectStorePath, readSavedStorePath, saveStorePath, syncItem } from './store.mjs';
+import { AGENTS, planInstall, applyAction, findBrokenLinks, findLinksTo, removeStoreSkill } from './install.mjs';
+import {
+  defaultStorePath,
+  projectStorePath,
+  readSavedStorePath,
+  saveStorePath,
+  syncItem,
+  listInstalledSkills,
+  treesEqual,
+} from './store.mjs';
 import { intro, outro, note, multiselect, select, confirm, text, dim, green, yellow, red, bold } from './prompts.mjs';
 import fs from 'node:fs';
 
@@ -84,9 +92,12 @@ async function main() {
   storeDir = path.resolve(storeDir);
   if (scope === 'global') saveStorePath(storeDir);
 
-  // 3. Skills
+  // 3. Skills. What's already in this store starts checked; unchecking is how
+  // you uninstall. Only the picker can remove: --skills= lists what to add.
   const allSkills = loadSkills(repoRoot);
+  const installed = new Set(listInstalledSkills(storeDir));
   let skills;
+  let removals = [];
   if (flags.skills === 'all') {
     skills = allSkills;
   } else if (flags.skills) {
@@ -100,13 +111,40 @@ async function main() {
     skills = [];
   } else {
     note(dim("Heads up: some skills depend on others (e.g. grill-me needs grilling)."));
+    if (installed.size > 0) note(dim('Installed skills are checked. Uncheck one to delete it.'));
     const groups = GROUPS.map((g) => ({
       label: g.label,
       options: allSkills
         .filter((s) => s.group === g.dir)
-        .map((s) => ({ label: s.dirName, value: s, description: s.description })),
+        .map((s) => ({
+          label: s.dirName,
+          value: s,
+          description: s.description,
+          selected: installed.has(s.dirName),
+        })),
     })).filter((g) => g.options.length > 0);
     skills = await multiselect('Which skills do you want to set up?', groups);
+    const picked = new Set(skills.map((s) => s.dirName));
+    removals = allSkills.map((s) => s.dirName).filter((name) => installed.has(name) && !picked.has(name));
+  }
+
+  // Unchecked skills: delete the store copy and every link to it, with consent.
+  let removed = 0;
+  if (removals.length > 0) {
+    const links = removals.flatMap((name) =>
+      findLinksTo(path.join(storeDir, 'skills', name), { scope, home, projectRoot }),
+    );
+    note(yellow(`Unchecked ${removals.length} installed skill(s): ${removals.join(', ')}`));
+    for (const link of links) note(dim(`  link ${link}`));
+    const doIt =
+      flags.force || (await confirm(`Delete them from ${storeDir} and remove ${links.length} link(s)?`, false));
+    if (doIt) {
+      for (const name of removals) removeStoreSkill(name, { storeDir, scope, home, projectRoot });
+      removed = removals.length;
+      note(green(`Deleted ${removed} skill(s) and ${links.length} link(s).`));
+    } else {
+      note(dim('Kept them.'));
+    }
   }
 
   // 4. AGENTS.md
@@ -120,7 +158,7 @@ async function main() {
   }
 
   if (skills.length === 0 && !includeInstructions) {
-    outro(dim('Nothing selected — nothing to do.'));
+    outro(dim(removed > 0 ? `Removed ${removed} skill(s). Nothing left to set up.` : 'Nothing selected — nothing to do.'));
     return;
   }
 
@@ -135,18 +173,30 @@ async function main() {
     return;
   }
 
-  // Sync repo -> store. Identical items are skipped silently; items that
-  // differ (e.g. manual edits in the store) are only replaced with consent.
+  // Sync repo -> store. Anything already in the store that no longer matches
+  // the repo byte for byte (repo moved on, or you edited the store copy) is
+  // offered as one update list, all checked.
   const interactive = process.stdin.isTTY && !flags.force;
-  const resolveStoreConflict = interactive
-    ? (target) => confirm(`${target} differs from the repo version (your edits?). Overwrite it?`, false)
-    : () => flags.force === true;
-  const counts = { added: 0, same: 0, updated: 0, kept: 0 };
   const syncTargets = skills.map((s) => ({ source: s.path, target: path.join(storeDir, 'skills', s.dirName) }));
   if (includeInstructions) syncTargets.push({ source: instructionsSource, target: path.join(storeDir, 'AGENTS.md') });
+
+  const stale = syncTargets.filter((t) => fs.existsSync(t.target) && !treesEqual(t.source, t.target));
+  let toUpdate = new Set(flags.force ? stale.map((t) => t.target) : []);
+  if (stale.length > 0 && interactive) {
+    note(yellow(`${stale.length} installed item(s) differ from the repo.`));
+    note(dim('Unchecked ones keep the copy in your store.'));
+    const chosen = await multiselect('Which do you want to update?', [
+      { options: stale.map((t) => ({ label: path.basename(t.target), value: t.target, selected: true })) },
+    ]);
+    toUpdate = new Set(chosen);
+  }
+
+  const counts = { added: 0, same: 0, updated: 0, kept: 0 };
+  const updatedNames = [];
   for (const { source, target } of syncTargets) {
-    const result = await syncItem(source, target, { resolveConflict: resolveStoreConflict });
+    const result = await syncItem(source, target, { resolveConflict: (t) => toUpdate.has(t) });
     counts[result]++;
+    if (result === 'updated') updatedNames.push(path.basename(target));
     if (result === 'kept') note(`${yellow('▲')} kept your version of ${target}`);
   }
   note(dim(`Store ${storeDir}: ${counts.added} added, ${counts.updated} updated, ${counts.same} unchanged, ${counts.kept} kept.`));
@@ -177,7 +227,10 @@ async function main() {
     if (result === 'linked') changed++;
     note(`${icons[result]} ${action.label} ${dim(`· ${words[result]} · ${action.target}`)}`);
   }
-  outro(bold(`Done — ${changed} linked, ${actions.length - changed} untouched.`));
+  const updatedPart = updatedNames.length
+    ? `, ${updatedNames.length} updated (${updatedNames.join(', ')})`
+    : '';
+  outro(bold(`Done — ${changed} linked, ${actions.length - changed} untouched${updatedPart}.`));
 }
 
 main().catch((err) => fail(err.message));

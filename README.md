@@ -22,9 +22,13 @@ It asks:
    default to `~/.config/agents` and remember your answer; project installs
    default to `.agents-store/` inside the project, which you'll want to
    gitignore.
-3. Which skills to set up
+3. Which skills to set up. Whatever is already in that folder starts checked.
+   Uncheck one and the CLI deletes it from the folder and removes its links,
+   after asking. Flags only add: `--skills=` never deletes.
 4. Whether to also set up my AGENTS.md
 5. Which agents to set them up for
+6. If anything already in that folder no longer matches this repo character
+   for character, which of those to update. All are checked.
 
 Each agent gets links to that shared folder, so updating a skill there updates
 it everywhere. This works the same whether you cloned this repo or ran it with

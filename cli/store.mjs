@@ -37,6 +37,18 @@ export function saveStorePath(storePath, env = process.env, home = os.homedir())
   fs.writeFileSync(file, JSON.stringify({ store: storePath }, null, 2) + '\n');
 }
 
+// Skill folder names currently in the store, i.e. what's already installed.
+export function listInstalledSkills(storeDir) {
+  try {
+    return fs
+      .readdirSync(path.join(storeDir, 'skills'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+  } catch {
+    return [];
+  }
+}
+
 export function treesEqual(a, b) {
   const sa = fs.statSync(a, { throwIfNoEntry: false });
   const sb = fs.statSync(b, { throwIfNoEntry: false });
