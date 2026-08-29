@@ -2,7 +2,8 @@
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GROUPS, loadSkills } from './skills.mjs';
+import { GROUPS } from './constants.mjs';
+import { loadSkills } from './skills.mjs';
 import { AGENTS, planInstall, applyAction, findBrokenLinks, findLinksTo, removeStoreSkill } from './install.mjs';
 import {
   defaultStorePath,
