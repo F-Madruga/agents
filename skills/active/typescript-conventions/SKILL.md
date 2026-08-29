@@ -5,6 +5,8 @@ description: TypeScript conventions to follow. Must always apply when reading or
 
 # TypeScript conventions
 
+When a project states its own conventions, you **must always** follow those over these where they overlap.
+
 | Rule | Summary |
 |------|---------|
 | Discriminated unions | Model variants with a `kind` literal discriminant so impossible states can't be represented. No optional-field bags. |
