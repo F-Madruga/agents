@@ -1,11 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-
-export const GROUPS = [
-  { dir: 'active', label: 'Active' },
-  { dir: 'experimenting', label: 'Experimenting' },
-  { dir: 'archived', label: 'Archived' },
-];
+import { GROUPS } from './constants.mjs';
 
 export function parseFrontmatter(text) {
   const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
