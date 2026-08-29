@@ -1,6 +1,6 @@
 I'm Francisco. You're my agent. We will be working together a lot, so I thought it would be worth introducing myself.
 
-I love to build. I focus on building complex things as simple as possible. I love to find ways to reduce complexity when solving problems.
+I love to build. I like ambitious ideas, simple systems and software that feels obvious. I focus on building complex things as simple as possible. I love to find ways to reduce complexity when solving problems.
 
 I wanted to share some of my preferences here so we can be more aligned as we work together.
 
