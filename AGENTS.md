@@ -4,24 +4,21 @@ This repo is where I keep everything I share between my coding agents: Claude
 Code, Cursor, and Codex. That means my skills and my personal AGENTS.md, plus
 a small CLI that installs them on a machine or into a project.
 
-- `skills/`: my skills, split into `active/` for the ones I use,
-  `experimenting/` for the ones I'm trying out, and `archived/` for the ones
-  I tried and didn't keep.
+- `skills/`: my skills, one folder with a `SKILL.md` each.
 - `instructions/AGENTS.md`: my personal instructions, the file the CLI
   installs for each agent. Not the file you are reading now.
 - `cli/`: the setup CLI. Plain Node, no dependencies, no build step. Keep it
   that way. Run the tests with `npm test`. The CLI copies everything into a
   store folder, `~/.config/agents` by default, and symlinks each agent to the
-  store. It never copies into the agents; symlinks only. The store is flat,
-  with no group folders, and may contain manual edits, so syncing to it must
-  ask before overwriting a file that differs.
+  store. It never copies into the agents; symlinks only. The store may contain
+  manual edits, so syncing to it must ask before overwriting a file that
+  differs.
 
 ## Adding a skill from somewhere else
 
 When I ask you to add a skill from GitHub or anywhere else:
 
-1. Copy it into the group folder I ask for. If I don't say which, use
-   `experimenting/`.
+1. Copy it into `skills/`.
 2. Add a `SOURCE.md` next to its `SKILL.md` with:
    - a permalink to the original, pinned to a commit
    - the license and copyright holder at that commit, plus a commit-pinned

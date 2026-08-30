@@ -15,26 +15,31 @@ test('parseFrontmatter returns empty object without frontmatter', () => {
   assert.deepEqual(parseFrontmatter('# Just markdown\n'), {});
 });
 
-test('loadSkills scans the three group folders', () => {
+test('loadSkills scans skills/, skipping folders without a SKILL.md', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agents-skills-'));
-  const write = (group, name, content) => {
-    const dir = path.join(root, 'skills', group, name);
+  const write = (name, content) => {
+    const dir = path.join(root, 'skills', name);
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, 'SKILL.md'), content);
   };
-  write('active', 'tdd', '---\nname: tdd\ndescription: desc\n---\nbody');
-  write('experimenting', 'bare', 'no frontmatter');
-  fs.mkdirSync(path.join(root, 'skills', 'active', 'no-skill-md'), { recursive: true });
-  // archived/ intentionally missing
+  write('tdd', '---\nname: tdd\ndescription: desc\n---\nbody');
+  write('bare', 'no frontmatter');
+  fs.mkdirSync(path.join(root, 'skills', 'no-skill-md'), { recursive: true });
 
   const skills = loadSkills(root);
   assert.deepEqual(
-    skills.map((s) => [s.dirName, s.group, s.description]),
+    skills.map((s) => [s.dirName, s.description]),
     [
-      ['tdd', 'active', 'desc'],
-      ['bare', 'experimenting', ''],
+      ['bare', ''],
+      ['tdd', 'desc'],
     ],
   );
-  assert.equal(skills[0].path, path.join(root, 'skills', 'active', 'tdd'));
+  assert.equal(skills[1].path, path.join(root, 'skills', 'tdd'));
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('loadSkills returns nothing when skills/ is missing', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'agents-skills-'));
+  assert.deepEqual(loadSkills(root), []);
   fs.rmSync(root, { recursive: true, force: true });
 });
