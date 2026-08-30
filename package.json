@@ -8,8 +8,7 @@
     "agents": "cli/index.mjs"
   },
   "scripts": {
-    "test": "node --test",
-    "reset-tools": "node cli/reset-tools.mjs"
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"

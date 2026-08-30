@@ -15,32 +15,17 @@ Supports:
 ## Create your own setup
 
 1. Fork this repo and clone your fork.
-2. Delete every skill of mine by running the following command:
-
-   ```sh
-   npm run reset-tools
-   ```
-
-3. Put your own skills in `skills/`, one folder with a `SKILL.md` each. You can
+2. Put your own skills in `skills/`, one folder with a `SKILL.md` each. You can
    write them yourself, or ask your own agent to add one by describing what you
    want or giving it a link to a skill you like.
-4. Write your own `instructions/AGENTS.md`.
-5. Push, then install your setup on any machine:
+3. Write your own `instructions/AGENTS.md`.
+4. Push, then install your setup on any machine:
 
    ```sh
    npx github:<your-username>/<your-fork>
    ```
 
 The CLI reads whatever is in your fork, so you don't have to touch `cli/`.
-
-## Use my setup
-
-This installs my skills and my AGENTS.md into the agents you pick, asking before
-it touches anything:
-
-```sh
-npx github:F-Madruga/agents
-```
 
 ## Create multiple setups
 
@@ -53,19 +38,18 @@ without a second fork.
    git checkout -b work
    ```
 
-2. Start from a clean slate, or skip this and delete only the skill folders you
-   don't want on the branch:
-
-   ```sh
-   npm run reset-tools
-   ```
-
-3. Add the skills and `instructions/AGENTS.md` you want for it.
-4. Push the branch, then install it by naming the branch after `#`:
+2. Add the skills and `instructions/AGENTS.md` you want for it.
+3. Push the branch, then install it by naming the branch after `#`:
 
    ```sh
    npx github:<your-username>/<your-fork>#work
    ```
+
+My own setup is one of these, and if you want you can use it by running:
+
+```sh
+npx github:F-Madruga/agents#personal-global
+```
 
 ## What the CLI does
 
