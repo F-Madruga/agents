@@ -66,65 +66,41 @@ function runPrompt({ render, renderDone, onKey }) {
 
 const doneLine = (message, answer) => `${green('◇')} ${message} ${dim('·')} ${dim(answer)}`;
 
-// groups: [{ label?, options: [{ label, value, description?, selected? }] }]
-// Group headers are selectable too: space on a header toggles the whole group.
-export function multiselect(message, groups) {
-  const rows = [];
-  for (const g of groups) {
-    const header = g.label ? { type: 'header', label: g.label, options: [] } : null;
-    if (header) rows.push(header);
-    for (const o of g.options) {
-      const option = { type: 'option', ...o, selected: !!o.selected };
-      if (header) header.options.push(option);
-      rows.push(option);
-    }
-  }
-  const options = rows.filter((r) => r.type === 'option');
-  const navigable = rows.filter((r) => r.type === 'option' || r.options.length > 0);
-  if (options.length === 0) return Promise.resolve([]);
+// options: [{ label, value, description?, selected? }]
+export function multiselect(message, options) {
+  const rows = options.map((o) => ({ ...o, selected: !!o.selected }));
+  if (rows.length === 0) return Promise.resolve([]);
   let cursor = 0;
 
   const render = () => {
     const lines = [`${cyan('◆')} ${bold(message)}`];
-    for (const r of rows) {
-      const active = navigable[cursor] === r;
+    rows.forEach((r, i) => {
+      const active = i === cursor;
       const pointer = active ? cyan('❯') : ' ';
-      if (r.type === 'header') {
-        const picked = r.options.filter((o) => o.selected).length;
-        const box = picked === r.options.length ? green('◼') : picked > 0 ? yellow('◪') : dim('◻');
-        const label = active ? cyan(r.label) : yellow(r.label);
-        lines.push(`${dim('│')} ${pointer} ${box} ${label} ${dim(`(${picked}/${r.options.length})`)}`);
-        continue;
-      }
       const box = r.selected ? green('◼') : dim('◻');
       const label = active ? cyan(r.label) : r.label;
       const desc = r.description ? `  ${dim(r.description)}` : '';
-      lines.push(`${dim('│')} ${pointer}   ${box} ${label}${desc}`);
-    }
-    lines.push(dim('└ ↑/↓ move · space toggle (group on a header) · a toggle all · enter confirm'));
+      lines.push(`${dim('│')} ${pointer} ${box} ${label}${desc}`);
+    });
+    lines.push(dim('└ ↑/↓ move · space toggle · a toggle all · enter confirm'));
     return lines.join('\n');
   };
 
   return runPrompt({
     render,
     renderDone: (values) => {
-      const labels = options.filter((o) => values.includes(o.value)).map((o) => o.label);
+      const labels = rows.filter((o) => values.includes(o.value)).map((o) => o.label);
       return doneLine(message, labels.length ? labels.join(', ') : 'none');
     },
     onKey: (key, str) => {
-      if (key.name === 'up' || key.name === 'k') cursor = (cursor - 1 + navigable.length) % navigable.length;
-      else if (key.name === 'down' || key.name === 'j') cursor = (cursor + 1) % navigable.length;
-      else if (key.name === 'space') {
-        const row = navigable[cursor];
-        if (row.type === 'header') {
-          const all = row.options.every((o) => o.selected);
-          for (const o of row.options) o.selected = !all;
-        } else row.selected = !row.selected;
-      } else if (str === 'a') {
-        const all = options.every((o) => o.selected);
-        for (const o of options) o.selected = !all;
+      if (key.name === 'up' || key.name === 'k') cursor = (cursor - 1 + rows.length) % rows.length;
+      else if (key.name === 'down' || key.name === 'j') cursor = (cursor + 1) % rows.length;
+      else if (key.name === 'space') rows[cursor].selected = !rows[cursor].selected;
+      else if (str === 'a') {
+        const all = rows.every((o) => o.selected);
+        for (const o of rows) o.selected = !all;
       } else if (key.name === 'return') {
-        return { value: options.filter((o) => o.selected).map((o) => o.value) };
+        return { value: rows.filter((o) => o.selected).map((o) => o.value) };
       }
     },
   });

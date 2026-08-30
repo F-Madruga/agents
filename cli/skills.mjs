@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { GROUPS } from './constants.mjs';
 
 export function parseFrontmatter(text) {
   const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
@@ -16,30 +15,27 @@ export function parseFrontmatter(text) {
   return out;
 }
 
-// Returns [{ name, dirName, description, group, path }] across the 3 group folders.
+// Returns [{ name, dirName, description, path }] for every skill in skills/.
 export function loadSkills(repoRoot) {
+  const skillsDir = path.join(repoRoot, 'skills');
+  let entries;
+  try {
+    entries = fs.readdirSync(skillsDir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
   const skills = [];
-  for (const group of GROUPS) {
-    const groupDir = path.join(repoRoot, 'skills', group.dir);
-    let entries;
-    try {
-      entries = fs.readdirSync(groupDir, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      const skillFile = path.join(groupDir, entry.name, 'SKILL.md');
-      if (!fs.existsSync(skillFile)) continue;
-      const fm = parseFrontmatter(fs.readFileSync(skillFile, 'utf8'));
-      skills.push({
-        name: fm.name || entry.name,
-        dirName: entry.name,
-        description: fm.description || '',
-        group: group.dir,
-        path: path.join(groupDir, entry.name),
-      });
-    }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const skillFile = path.join(skillsDir, entry.name, 'SKILL.md');
+    if (!fs.existsSync(skillFile)) continue;
+    const fm = parseFrontmatter(fs.readFileSync(skillFile, 'utf8'));
+    skills.push({
+      name: fm.name || entry.name,
+      dirName: entry.name,
+      description: fm.description || '',
+      path: path.join(skillsDir, entry.name),
+    });
   }
   return skills;
 }

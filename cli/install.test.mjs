@@ -29,7 +29,7 @@ test('resolveTargets maps agent/scope to the right paths', () => {
 
 test('planInstall dedupes the shared project AGENTS.md and sources from the store', () => {
   const actions = planInstall({
-    skills: [{ dirName: 'tdd', path: '/repo/skills/active/tdd' }],
+    skills: [{ dirName: 'tdd', path: '/repo/skills/tdd' }],
     agentIds: ['cursor', 'codex'],
     scope: 'project',
     includeInstructions: true,
@@ -84,7 +84,7 @@ test('findBrokenLinks flags dead links into our roots, ignores foreign ones', ()
   // Dead link into the store (skill removed from it).
   fs.symlinkSync(path.join(storeDir, 'skills', 'gone'), path.join(skillsDir, 'gone'));
   // Dead link into the repo (old repo-pointing scheme).
-  fs.symlinkSync(path.join(repoRoot, 'skills', 'experimenting', 'old'), path.join(skillsDir, 'old'));
+  fs.symlinkSync(path.join(repoRoot, 'skills', 'old'), path.join(skillsDir, 'old'));
   // Dead link NOT into store or repo — someone else's, leave it alone.
   fs.symlinkSync(path.join(root, 'elsewhere', 'gone'), path.join(skillsDir, 'foreign'));
 

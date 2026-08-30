@@ -4,8 +4,7 @@ A repo you fork to build your own agent setup. Keep your skills and instructions
 here, and the CLI installs them into each coding agent, in the folder and file
 name that agent expects.
 
-What's in it now is my setup: the skills I use, the ones I'm trying out and the
-ones I've retired. Take them or throw them out.
+What's in it now is my setup: the skills I use. Take them or throw them out.
 
 Supports:
 
@@ -16,17 +15,15 @@ Supports:
 ## Create your own setup
 
 1. Fork this repo and clone your fork.
-2. Delete every skill of mine, keeping the three group folders, by running the
-   following command:
+2. Delete every skill of mine by running the following command:
 
    ```sh
    npm run reset-tools
    ```
 
-3. Put your own skills in `skills/active/`, `skills/experimenting/`, or
-   `skills/archived/`, one folder with a `SKILL.md` each. You can write them
-   yourself, or ask your own agent to add one by describing what you want or
-   giving it a link to a skill you like.
+3. Put your own skills in `skills/`, one folder with a `SKILL.md` each. You can
+   write them yourself, or ask your own agent to add one by describing what you
+   want or giving it a link to a skill you like.
 4. Write your own `instructions/AGENTS.md`.
 5. Push, then install your setup on any machine:
 

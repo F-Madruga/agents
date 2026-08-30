@@ -2,7 +2,6 @@
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GROUPS } from './constants.mjs';
 import { loadSkills } from './skills.mjs';
 import { AGENTS, planInstall, applyAction, findBrokenLinks, findLinksTo, removeStoreSkill } from './install.mjs';
 import {
@@ -113,18 +112,13 @@ async function main() {
   } else {
     note(dim("Heads up: some skills depend on others (e.g. grill-me needs grilling)."));
     if (installed.size > 0) note(dim('Installed skills are checked. Uncheck one to delete it.'));
-    const groups = GROUPS.map((g) => ({
-      label: g.label,
-      options: allSkills
-        .filter((s) => s.group === g.dir)
-        .map((s) => ({
-          label: s.dirName,
-          value: s,
-          description: s.description,
-          selected: installed.has(s.dirName),
-        })),
-    })).filter((g) => g.options.length > 0);
-    skills = await multiselect('Which skills do you want to set up?', groups);
+    const options = allSkills.map((s) => ({
+      label: s.dirName,
+      value: s,
+      description: s.description,
+      selected: installed.has(s.dirName),
+    }));
+    skills = await multiselect('Which skills do you want to set up?', options);
     const picked = new Set(skills.map((s) => s.dirName));
     removals = allSkills.map((s) => s.dirName).filter((name) => installed.has(name) && !picked.has(name));
   }
@@ -166,9 +160,10 @@ async function main() {
   // 5. Agents
   const agentIds =
     flags.agents ??
-    (await multiselect('Which agents?', [
-      { options: AGENTS.map((a) => ({ label: a.label, value: a.id })) },
-    ]));
+    (await multiselect(
+      'Which agents?',
+      AGENTS.map((a) => ({ label: a.label, value: a.id })),
+    ));
   if (agentIds.length === 0) {
     outro(dim('No agents selected — nothing to do.'));
     return;
@@ -186,9 +181,10 @@ async function main() {
   if (stale.length > 0 && interactive) {
     note(yellow(`${stale.length} installed item(s) differ from the repo.`));
     note(dim('Unchecked ones keep the copy in your store.'));
-    const chosen = await multiselect('Which do you want to update?', [
-      { options: stale.map((t) => ({ label: path.basename(t.target), value: t.target, selected: true })) },
-    ]);
+    const chosen = await multiselect(
+      'Which do you want to update?',
+      stale.map((t) => ({ label: path.basename(t.target), value: t.target, selected: true })),
+    );
     toUpdate = new Set(chosen);
   }
 
