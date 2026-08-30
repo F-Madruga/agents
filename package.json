@@ -8,7 +8,8 @@
     "agents": "cli/index.mjs"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "agent-setup": "npx -y github:F-Madruga/agents#agents-project --scope=project --all-skills --agents-md"
   },
   "engines": {
     "node": ">=18"

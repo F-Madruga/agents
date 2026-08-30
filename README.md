@@ -45,6 +45,13 @@ it by running:
 npx github:F-Madruga/agents#personal-global
 ```
 
+The setup for working on this repo lives on a branch like that too, with a
+script in `package.json` that installs it:
+
+```sh
+npm run agent-setup
+```
+
 The CLI reads whatever is in your fork, so you don't have to touch `cli/`.
 
 ## What the CLI does
