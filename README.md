@@ -38,8 +38,8 @@ Supports:
    npx github:<your-username>/<your-fork>#<setup-name>
    ```
 
-My own skills (don't judge, pls <3) live on a branch like this, and you can use
-them by running:
+My own setup (don't judge, pls <3) lives on a branch like this, and you can use
+it by running:
 
 ```sh
 npx github:F-Madruga/agents#personal-global
