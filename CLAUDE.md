@@ -1,1 +1,1 @@
-AGENTS.md
+/.agents-store/AGENTS.md
