@@ -38,11 +38,14 @@ export function saveStorePath(storePath, env = process.env, home = os.homedir())
 }
 
 // Skill folder names currently in the store, i.e. what's already installed.
+// Only folders holding a SKILL.md count: anything else under the path may
+// belong to another program and is not ours to touch.
 export function listInstalledSkills(storeDir) {
   try {
     return fs
       .readdirSync(path.join(storeDir, 'skills'), { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
+      .filter((entry) => fs.existsSync(path.join(storeDir, 'skills', entry.name, 'SKILL.md')))
       .map((entry) => entry.name);
   } catch {
     return [];

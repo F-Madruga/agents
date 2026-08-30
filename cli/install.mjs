@@ -157,3 +157,57 @@ export function findBrokenLinks({ agentIds, scope, home, projectRoot, roots }) {
   }
   return [...broken.values()];
 }
+
+// Deletes the whole installed setup at this scope: every symlink into the
+// store across all agents, then the store's skill folders and AGENTS.md.
+// Only folders holding a SKILL.md are deleted; anything else in the store
+// (e.g. config.json, or another program's files) stays. Returns the links
+// removed.
+export function removeStoreSetup(storeDir, { scope, home, projectRoot }) {
+  const links = findSetupLinks(storeDir, { scope, home, projectRoot });
+  for (const link of links) fs.rmSync(link, { force: true });
+  const storeSkillsDir = path.join(storeDir, 'skills');
+  let entries = [];
+  try {
+    entries = fs.readdirSync(storeSkillsDir);
+  } catch {}
+  for (const entry of entries) {
+    if (fs.existsSync(path.join(storeSkillsDir, entry, 'SKILL.md'))) {
+      fs.rmSync(path.join(storeSkillsDir, entry), { recursive: true, force: true });
+    }
+  }
+  if (fs.existsSync(storeSkillsDir) && fs.readdirSync(storeSkillsDir).length === 0) fs.rmdirSync(storeSkillsDir);
+  fs.rmSync(path.join(storeDir, 'AGENTS.md'), { force: true });
+  return links;
+}
+
+// Symlinks in any agent's dirs at this scope that resolve into the store:
+// every skill link plus the instructions link.
+export function findSetupLinks(storeDir, { scope, home, projectRoot }) {
+  const resolvedStore = path.resolve(storeDir);
+  const pointsIntoStore = (link) => {
+    let stat;
+    try {
+      stat = fs.lstatSync(link);
+    } catch {
+      return false;
+    }
+    if (!stat.isSymbolicLink()) return false;
+    const dest = path.resolve(path.dirname(link), fs.readlinkSync(link));
+    return dest.startsWith(resolvedStore + path.sep);
+  };
+  const found = new Set();
+  for (const agent of AGENTS) {
+    const targets = resolveTargets(agent.id, scope, { home, projectRoot });
+    let entries = [];
+    try {
+      entries = fs.readdirSync(targets.skillsDir);
+    } catch {}
+    for (const entry of entries) {
+      const link = path.join(targets.skillsDir, entry);
+      if (pointsIntoStore(link)) found.add(link);
+    }
+    if (pointsIntoStore(targets.instructionsFile)) found.add(targets.instructionsFile);
+  }
+  return [...found];
+}

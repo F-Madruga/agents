@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolveTargets, planInstall, applyAction, findBrokenLinks, findLinksTo, removeStoreSkill } from './install.mjs';
+import { resolveTargets, planInstall, applyAction, findBrokenLinks, findLinksTo, removeStoreSkill, removeStoreSetup } from './install.mjs';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'agents-install-'));
 
@@ -123,4 +123,40 @@ test('removeStoreSkill deletes the store copy and every link to it, across agent
   assert.equal(fs.existsSync(path.join(claudeDir, 'grilling')), true);
   assert.equal(fs.existsSync(keep), true);
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('removeStoreSetup deletes store skills, AGENTS.md, and every link into the store', () => {
+  const root = tmp();
+  const home = path.join(root, 'home');
+  const projectRoot = path.join(root, 'proj');
+  const storeDir = path.join(projectRoot, '.agents-store');
+
+  fs.mkdirSync(path.join(storeDir, 'skills', 'old-skill'), { recursive: true });
+  fs.writeFileSync(path.join(storeDir, 'skills', 'old-skill', 'SKILL.md'), 'x');
+  fs.writeFileSync(path.join(storeDir, 'AGENTS.md'), 'y');
+  fs.writeFileSync(path.join(storeDir, 'config.json'), '{}');
+
+  const skillLink = path.join(projectRoot, '.claude', 'skills', 'old-skill');
+  fs.mkdirSync(path.dirname(skillLink), { recursive: true });
+  fs.symlinkSync(path.join(storeDir, 'skills', 'old-skill'), skillLink, 'dir');
+  const instructionsLink = path.join(projectRoot, 'CLAUDE.md');
+  fs.symlinkSync(path.join(storeDir, 'AGENTS.md'), instructionsLink, 'file');
+  const unrelatedLink = path.join(projectRoot, '.cursor', 'skills', 'elsewhere');
+  fs.mkdirSync(path.dirname(unrelatedLink), { recursive: true });
+  fs.symlinkSync(path.join(root, 'somewhere-else'), unrelatedLink, 'dir');
+  // Another program's folder in skills/: no SKILL.md, so not ours to delete.
+  const foreignDir = path.join(storeDir, 'skills', 'other-programs-folder');
+  fs.mkdirSync(foreignDir, { recursive: true });
+  fs.writeFileSync(path.join(foreignDir, 'data.txt'), 'z');
+
+  const removed = removeStoreSetup(storeDir, { scope: 'project', home, projectRoot });
+
+  assert.deepEqual(removed.sort(), [instructionsLink, skillLink].sort());
+  assert.equal(fs.existsSync(path.join(storeDir, 'skills', 'old-skill')), false);
+  assert.equal(fs.existsSync(path.join(foreignDir, 'data.txt')), true);
+  assert.equal(fs.existsSync(path.join(storeDir, 'AGENTS.md')), false);
+  assert.equal(fs.existsSync(path.join(storeDir, 'config.json')), true);
+  assert.equal(fs.lstatSync(unrelatedLink).isSymbolicLink(), true);
+  assert.equal(fs.existsSync(skillLink), false);
+  assert.equal(fs.existsSync(instructionsLink), false);
 });

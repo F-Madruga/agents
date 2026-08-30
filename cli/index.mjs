@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadSkills } from './skills.mjs';
-import { AGENTS, planInstall, applyAction, findBrokenLinks, findLinksTo, removeStoreSkill } from './install.mjs';
+import { AGENTS, planInstall, applyAction, findBrokenLinks, findLinksTo, removeStoreSkill, removeStoreSetup } from './install.mjs';
 import {
   defaultStorePath,
   projectStorePath,
@@ -92,9 +92,29 @@ async function main() {
   storeDir = path.resolve(storeDir);
   if (scope === 'global') saveStorePath(storeDir);
 
-  // 3. Skills. What's already in this store starts checked; unchecking is how
-  // you uninstall. Only the picker can remove: --skills= lists what to add.
+  // 3. A store left by another setup: it holds skills this setup does not
+  // include. Offer to delete the whole current setup, store contents and
+  // every symlink into it, and start clean. Only folders that are actually
+  // skills (they hold a SKILL.md) count or get deleted; anything else in the
+  // path may belong to another program and stays.
   const allSkills = loadSkills(repoRoot);
+  const setupSkillDirNames = new Set(allSkills.map((s) => s.dirName));
+  const leftoverSkills = listInstalledSkills(storeDir).filter((name) => !setupSkillDirNames.has(name));
+  if (leftoverSkills.length > 0) {
+    note(yellow(`${storeDir} already holds a setup with skill(s) this one does not include: ${leftoverSkills.join(', ')}`));
+    const wipe =
+      flags.force ||
+      (process.stdin.isTTY && (await confirm("I'm going to delete the current setup, is this ok?", false)));
+    if (wipe) {
+      const removedLinks = removeStoreSetup(storeDir, { scope, home, projectRoot });
+      note(green(`Deleted the current setup: ${removedLinks.length} link(s) and the store copies.`));
+    } else {
+      note(dim('Kept it.'));
+    }
+  }
+
+  // 4. Skills. What's already in this store starts checked; unchecking is how
+  // you uninstall. Only the picker can remove: --skills= lists what to add.
   const installed = new Set(listInstalledSkills(storeDir));
   let skills;
   let removals = [];
@@ -142,7 +162,7 @@ async function main() {
     }
   }
 
-  // 4. AGENTS.md
+  // 5. AGENTS.md
   const instructionsSource = path.join(repoRoot, 'instructions', 'AGENTS.md');
   let includeInstructions = flags.agentsMd;
   if (includeInstructions === undefined) {
@@ -157,7 +177,7 @@ async function main() {
     return;
   }
 
-  // 5. Agents
+  // 6. Agents
   const agentIds =
     flags.agents ??
     (await multiselect(

@@ -64,12 +64,16 @@ skill in that folder updates it everywhere. It asks:
    default to `~/.config/agents` and remember your answer; project installs
    default to `.agents-store/` inside the project, which you'll want to
    gitignore.
-3. Which skills to set up. Whatever is already in that folder starts checked.
+3. Whether to delete a setup that's already there. If the folder holds
+   skills this one doesn't include, the CLI asks to delete that setup and
+   its links before installing. Folders without a SKILL.md may belong to
+   another program, so it leaves them alone.
+4. Which skills to set up. Whatever is already in that folder starts checked.
    Uncheck one and the CLI deletes it from the folder and removes its links,
    after asking. Flags only add: `--skills=` never deletes.
-4. Whether to also set up the AGENTS.md
-5. Which agents to set them up for
-6. If anything already in that folder no longer matches the repo character for
+5. Whether to also set up the AGENTS.md
+6. Which agents to set them up for
+7. If anything already in that folder no longer matches the repo character for
    character, which of those to update. All are checked.
 
 Run it again anytime. It skips what's already in place and cleans up links left
