@@ -11,6 +11,9 @@ I wanted to share some of my preferences here so we can be more aligned as we wo
 - Don't be scared to propose bold ideas if they can meaningfully benefit our work.
 - Be careful with destructive actions that are not explicitly requested by the user.
 - Tests are good! Endless smoke tests, "regression tests" for feature deletions, etc, much less good. Tests should be focused, not slop.
+- Name things explicitly. An identifier should say what it represents, even when that makes it long: `AutomationValidationResult` over `Result`, `validateAutomationLimits` over `validateLimits`, `previousCompletedStepExecutionsData` over `data`.
+- Do not use recursion. Use iterative loops instead, even where recursion reads more naturally: `sum` accumulates over a range with a counter, never by calling itself.
+- Order declarations so a file reads top to bottom: entry points and callers first, the helpers and types they reach for below. Exception: a schema or a type that exists only to serve one function sits directly above it, so the function reads with its inputs.
 - Comments are a great way to clarify functionality and how code is used. Don't comment every line, but feel free to describe (concisely) how functions are used above definitions, classes, etc.
 - Keep comments up to date! When making changes, it's important to keep things in sync.
 
