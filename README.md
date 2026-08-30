@@ -1,10 +1,10 @@
 # agents
 
-A repo you fork to build your own agent setup. Keep your skills and instructions
-here, and the CLI installs them into each coding agent, in the folder and file
-name that agent expects.
+A repo you fork to keep your agent setup in one place. The CLI puts your skills
+and instructions where each agent expects to find them.
 
-What's in it now is my setup: the skills I use. Take them or throw them out.
+`main` is empty on purpose. Setups live on branches, so one fork holds as many
+as you want.
 
 Supports:
 
@@ -12,44 +12,40 @@ Supports:
 - Cursor
 - Codex
 
-## Create your own setup
+## Usage
 
 1. Fork this repo and clone your fork.
-2. Put your own skills in `skills/`, one folder with a `SKILL.md` each. You can
+2. Leave `main` empty and branch off it. That way you can have multiple setups
+   (one for projects, one global, one personal, another for work, whatever you
+   want), and updating is a pull into `main` plus a rebase.
+
+   ```sh
+   git checkout -b <setup-name>
+   ```
+
+   ```sh
+   git checkout -b personal-global
+   ```
+
+3. Put your own skills in `skills/`, one folder with a `SKILL.md` each. You can
    write them yourself, or ask your own agent to add one by describing what you
    want or giving it a link to a skill you like.
-3. Write your own `instructions/AGENTS.md`.
-4. Push, then install your setup on any machine:
+4. Write your own `instructions/AGENTS.md`.
+5. Push the branch.
+6. Install it on any machine by naming the branch after `#`:
 
    ```sh
-   npx github:<your-username>/<your-fork>
+   npx github:<your-username>/<your-fork>#personal-global
    ```
 
-The CLI reads whatever is in your fork, so you don't have to touch `cli/`.
-
-## Create multiple setups
-
-Each branch is a setup of its own. Keep a work one apart from a personal one
-without a second fork.
-
-1. From your fork, branch off:
-
-   ```sh
-   git checkout -b work
-   ```
-
-2. Add the skills and `instructions/AGENTS.md` you want for it.
-3. Push the branch, then install it by naming the branch after `#`:
-
-   ```sh
-   npx github:<your-username>/<your-fork>#work
-   ```
-
-My own setup is one of these, and if you want you can use it by running:
+My own skills (don't judge, pls <3) live on a branch like this, and you can use
+them by running:
 
 ```sh
 npx github:F-Madruga/agents#personal-global
 ```
+
+The CLI reads whatever is in your fork, so you don't have to touch `cli/`.
 
 ## What the CLI does
 
