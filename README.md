@@ -12,7 +12,7 @@ Supports:
 - Cursor
 - Codex
 
-## Usage
+## Getting started
 
 1. Fork this repo and clone your fork.
 2. Leave `main` empty and branch off it. That way you can have multiple setups
@@ -35,7 +35,7 @@ Supports:
 6. Install it on any machine by naming the branch after `#`:
 
    ```sh
-   npx github:<your-username>/<your-fork>#personal-global
+   npx github:<your-username>/<your-fork>#<setup-name>
    ```
 
 My own skills (don't judge, pls <3) live on a branch like this, and you can use
