@@ -4,7 +4,7 @@ This repo is where I keep everything I share between my coding agents: Claude
 Code, Cursor, and Codex. That means my skills and my personal AGENTS.md, plus
 a small CLI that installs them on a machine or into a project.
 
-- `skills/`: my skills, one folder with a `SKILL.md` each. Flat, no grouping.
+- `skills/`: my skills, one folder with a `SKILL.md` each.
 - `instructions/AGENTS.md`: my personal instructions, the file the CLI
   installs for each agent. Not the file you are reading now.
 - `cli/`: the setup CLI. Plain Node, no dependencies, no build step. Keep it
