@@ -56,6 +56,9 @@ The CLI reads whatever is in your fork, so you don't have to touch `cli/`.
 
 ## What the CLI does
 
+AI wrote the entire CLI. I never read the code, only checked that it behaves
+as described here. Use it at your own risk.
+
 It copies everything into one folder and links each agent to it, so editing a
 skill in that folder updates it everywhere. It asks:
 
