@@ -84,7 +84,11 @@ export async function applyAction(action, { resolveConflict } = {}) {
     if (!overwrite) return 'skipped';
     fs.rmSync(target, { recursive: true, force: true });
   }
-  fs.symlinkSync(source, target, fs.statSync(source).isDirectory() ? 'dir' : 'file');
+  // Write the link relative to its own directory so a committed project setup
+  // stays valid after a clone or a move. Every reader here resolves links
+  // against path.dirname(link), so relative and absolute links compare equal.
+  const linkTarget = path.relative(path.dirname(target), source);
+  fs.symlinkSync(linkTarget, target, fs.statSync(source).isDirectory() ? 'dir' : 'file');
   return 'linked';
 }
 

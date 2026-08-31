@@ -12,9 +12,9 @@ export function defaultStorePath(env = process.env, home = os.homedir()) {
   return path.join(base, STORE_DIR_NAME);
 }
 
-// Project installs keep their store inside the project. It holds machine-local
-// copies and the symlinks pointing at it are absolute, so it belongs in
-// .gitignore rather than in the repo.
+// Project installs keep their store inside the project. The symlinks pointing
+// at it are relative, so the store and the links stay valid across a clone or
+// a move, and a project setup can be committed to the repo.
 export function projectStorePath(projectRoot) {
   return path.join(projectRoot, PROJECT_STORE_DIR_NAME);
 }

@@ -58,7 +58,10 @@ test('applyAction symlinks, detects already-installed, and respects conflicts', 
   const action = { source, target };
 
   assert.equal(await applyAction(action), 'linked');
-  assert.equal(fs.readlinkSync(target), source);
+  // The link is relative to its own directory, and resolves back to the source.
+  const link = fs.readlinkSync(target);
+  assert.ok(!path.isAbsolute(link), `expected a relative link, got ${link}`);
+  assert.equal(path.resolve(path.dirname(target), link), source);
   assert.equal(await applyAction(action), 'already');
 
   // Foreign file at target: skipped without consent, replaced with it.
@@ -66,7 +69,7 @@ test('applyAction symlinks, detects already-installed, and respects conflicts', 
   fs.mkdirSync(target);
   assert.equal(await applyAction(action), 'skipped');
   assert.equal(await applyAction(action, { resolveConflict: async () => true }), 'linked');
-  assert.equal(fs.readlinkSync(target), source);
+  assert.equal(path.resolve(path.dirname(target), fs.readlinkSync(target)), source);
   fs.rmSync(root, { recursive: true, force: true });
 });
 
