@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "agent-setup": "npx -y github:F-Madruga/agents#agents-project --scope=project --store=.agents-store --all-skills --agents-md --agents=claude,cursor --force"
+    "agent-setup": "npx -y github:F-Madruga/agents#agents-project --scope=project --store=.agents-store --all-skills --agents-md --all-agents --force"
   },
   "engines": {
     "node": ">=18"

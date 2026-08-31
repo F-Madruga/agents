@@ -25,7 +25,7 @@ Interactive by default; every flag skips its prompt.
                       (global: ~/.config/agents, or the location chosen last
                       time; project: <project>/.agents-store)
   --skills=a,b        Skill folder names to install (or --all-skills)
-  --agents=ids        Comma-separated: ${AGENTS.map((a) => a.id).join(', ')}
+  --agents=ids        Comma-separated: ${AGENTS.map((a) => a.id).join(', ')} (or --all-agents)
   --agents-md         Also install AGENTS.md (--no-agents-md to skip)
   --force             Overwrite existing files without asking
   -h, --help          Show this help
@@ -44,6 +44,7 @@ function parseArgs(argv) {
     else if (arg === '--agents-md') flags.agentsMd = true;
     else if (arg === '--no-agents-md') flags.agentsMd = false;
     else if (arg === '--all-skills') flags.skills = 'all';
+    else if (arg === '--all-agents') flags.agents = 'all';
     else if (arg.startsWith('--skills=')) flags.skills = arg.slice('--skills='.length).split(',').filter(Boolean);
     else if (arg.startsWith('--agents=')) flags.agents = arg.slice('--agents='.length).split(',').filter(Boolean);
     else if (arg.startsWith('--scope=')) flags.scope = arg.slice('--scope='.length);
@@ -51,7 +52,7 @@ function parseArgs(argv) {
     else fail(`Unknown flag: ${arg}\n\n${HELP}`);
   }
   if (flags.scope && !['global', 'project'].includes(flags.scope)) fail(`--scope must be global or project`);
-  if (flags.agents) {
+  if (flags.agents && flags.agents !== 'all') {
     for (const id of flags.agents) {
       if (!AGENTS.some((a) => a.id === id)) fail(`Unknown agent: ${id} (expected ${AGENTS.map((a) => a.id).join(', ')})`);
     }
@@ -179,11 +180,13 @@ async function main() {
 
   // 6. Agents
   const agentIds =
-    flags.agents ??
-    (await multiselect(
-      'Which agents?',
-      AGENTS.map((a) => ({ label: a.label, value: a.id })),
-    ));
+    flags.agents === 'all'
+      ? AGENTS.map((a) => a.id)
+      : flags.agents ??
+        (await multiselect(
+          'Which agents?',
+          AGENTS.map((a) => ({ label: a.label, value: a.id })),
+        ));
   if (agentIds.length === 0) {
     outro(dim('No agents selected — nothing to do.'));
     return;
