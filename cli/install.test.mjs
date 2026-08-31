@@ -64,6 +64,14 @@ test('applyAction symlinks, detects already-installed, and respects conflicts', 
   assert.equal(path.resolve(path.dirname(target), link), source);
   assert.equal(await applyAction(action), 'already');
 
+  // A stale absolute link resolving to our source is migrated to relative.
+  fs.rmSync(target);
+  fs.symlinkSync(source, target, 'dir');
+  assert.equal(await applyAction(action), 'linked');
+  const migrated = fs.readlinkSync(target);
+  assert.ok(!path.isAbsolute(migrated), `expected a relative link, got ${migrated}`);
+  assert.equal(path.resolve(path.dirname(target), migrated), source);
+
   // Foreign file at target: skipped without consent, replaced with it.
   fs.rmSync(target);
   fs.mkdirSync(target);

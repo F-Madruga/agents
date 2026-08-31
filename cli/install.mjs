@@ -66,28 +66,36 @@ export function planInstall({ skills, agentIds, scope, includeInstructions, stor
   return actions;
 }
 
-// Returns 'already' | 'skipped' | 'linked'.
+// Returns 'already' | 'skipped' | 'linked'. A stale absolute link that still
+// resolves to our source is migrated to relative and reported as 'linked'.
 export async function applyAction(action, { resolveConflict } = {}) {
   const source = path.resolve(action.source);
   const { target } = action;
   fs.mkdirSync(path.dirname(target), { recursive: true });
+  // The link is written relative to its own directory so a committed project
+  // setup stays valid after a clone or a move.
+  const linkTarget = path.relative(path.dirname(target), source);
   let existing;
   try {
     existing = fs.lstatSync(target);
   } catch {}
   if (existing) {
     if (existing.isSymbolicLink()) {
-      const current = path.resolve(path.dirname(target), fs.readlinkSync(target));
-      if (current === source) return 'already';
+      const stored = fs.readlinkSync(target);
+      if (stored === linkTarget) return 'already';
+      // Our own link, resolving to the same source but stored differently
+      // (e.g. an old absolute link): migrate it to the relative form in place,
+      // no conflict prompt. Re-running the setup then heals stale links.
+      if (path.resolve(path.dirname(target), stored) === source) {
+        fs.rmSync(target);
+        fs.symlinkSync(linkTarget, target, fs.statSync(source).isDirectory() ? 'dir' : 'file');
+        return 'linked';
+      }
     }
     const overwrite = resolveConflict ? await resolveConflict(action) : false;
     if (!overwrite) return 'skipped';
     fs.rmSync(target, { recursive: true, force: true });
   }
-  // Write the link relative to its own directory so a committed project setup
-  // stays valid after a clone or a move. Every reader here resolves links
-  // against path.dirname(link), so relative and absolute links compare equal.
-  const linkTarget = path.relative(path.dirname(target), source);
   fs.symlinkSync(linkTarget, target, fs.statSync(source).isDirectory() ? 'dir' : 'file');
   return 'linked';
 }
