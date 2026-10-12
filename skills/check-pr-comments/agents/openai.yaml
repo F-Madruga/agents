@@ -1,0 +1,5 @@
+interface:
+  display_name: "Check PR Comments"
+  short_description: "List PR comments and what's addressed"
+policy:
+  allow_implicit_invocation: false
